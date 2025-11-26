@@ -31,6 +31,7 @@ void setColor(int color) {
     SetConsoleTextAttribute(hConsole, color);
 }
 
+// Check xem đã tồn tại hay chưa
 void ensureDirectoryExists() {
     struct stat info;
     if(stat(DIR_INFO.c_str(), &info) != 0) {
@@ -312,6 +313,15 @@ private:
 		}
 	}
 
+	void deleteDetailFile(string strUsername) {
+		string strFilename = DIR_INFO + "/" + strUsername + ".txt";
+		if(remove(strFilename.c_str()) == 0) {
+			setColor(GREEN);
+			cout<<"Da xoa file thong tin chi tiet: "<<strFilename<<endl;
+			setColor(WHITE);
+		}
+	}
+
 public:
 	EmployeeManager() {
         loadFromFile();
@@ -352,6 +362,7 @@ public:
 
 		if(bDeleted) {
 			saveToFile();
+			deleteDetailFile(strUsername);
 			setColor(GREEN);
 			cout<<"Da xa nhan vien thanh cong"<<endl;
 			setColor(WHITE);
@@ -366,79 +377,90 @@ public:
 		string strUsername;
 		cout<<"Nhap username can cap nhat: ";
 		getline(cin, strUsername);
+		strUsername = trim(strUsername);
 
 		Employee* pEmp = getEmployeeByUsername(trim(strUsername));
-		if(pEmp) {
-			string strInput;
-			cout<<"--- Cap nhat thong tin (an enter neu giu nguyen) ---"<<endl;
-
-			cout<<"Ho ten ("<<pEmp->getName()<<"): "; 
-			getline(cin, strInput);
-			if(!strInput.empty()) {
-				pEmp->setName(standardizeNames(strInput));
-			}
-
-			cout<<"Dia chi ("<<pEmp->getAddress()<<"): "; 
-			getline(cin, strInput);
-			if(!strInput.empty()) {
-				pEmp->setAddress(strInput);
-			}
-
-			while(true) {
-				cout<<"SDT (" << pEmp->getPhonenumber()<<"): ";
-				getline(cin, strInput);
-
-				if(strInput.empty()) {
-					break;
-				}
-
-				if(isValidPhoneNumber(trim(strInput))) {
-					pEmp->setPhonenumber(trim(strInput));
-					break;
-				} else {
-					setColor(RED);
-					cout<<"So dien thoai phai co dung 10 chu so: "<<endl;
-					setColor(WHITE);
-				}
-			}
-
-			while(true) {
-				cout<<"Email (" << pEmp->getEmail() << "): ";
-				getline(cin, strInput);
-
-				if (strInput.empty()) {
-                    break; 
-                }
-
-				if(isValidGmail(trim(strInput))) {
-					pEmp->setEmail(trim(strInput));
-					break;
-				} else {
-					setColor(RED);
-					cout<<"Email phải co duoi @gmail.com";
-					setColor(WHITE);
-				}
-			}
-
-			saveToFile();
-            writeDetailFile(pEmp);
-			setColor(GREEN);
-			cout<<"Cap nhat thanh cong"<<endl;
-			setColor(WHITE);
-		} else {
+		if(!pEmp) {
 			setColor(RED);
-			cout<<"Khong tim thay nhan vien"<<endl;
+			cout<<"Khong tim thay nhan vien voi username: "<<strUsername<<endl;
 			setColor(WHITE);
+			return;
 		}
+
+		setColor(YELLOW);
+		cout<<"--- Thong tin hien tai ---"<<endl;
+		cout << *pEmp << endl;
+		setColor(WHITE);
+
+		string strInput;
+		cout<<"--- Cap nhat thong tin (an Enter neu giu nguyen) ---"<<endl;
+
+		cout<<"Ho ten ("<<pEmp->getName()<<"): "; 
+		getline(cin, strInput);
+		if(!strInput.empty()) {
+			pEmp->setName(standardizeNames(strInput));
+		}
+
+		cout<<"Dia chi ("<<pEmp->getAddress()<<"): "; 
+		getline(cin, strInput);
+		if(!strInput.empty()) {
+			pEmp->setAddress(strInput);
+		}
+
+		while(true) {
+			cout<<"SDT (" << pEmp->getPhonenumber()<<"): ";
+			getline(cin, strInput);
+
+			if(strInput.empty()) {
+				break;
+			}
+
+			if(isValidPhoneNumber(trim(strInput))) {
+				pEmp->setPhonenumber(trim(strInput));
+				break;
+			} else {
+				setColor(RED);
+				cout<<"So dien thoai phai co dung 10 chu so: "<<endl;
+				setColor(WHITE);
+			}
+		}
+
+		while(true) {
+			cout<<"Email (" << pEmp->getEmail() << "): ";
+			getline(cin, strInput);
+
+			if (strInput.empty()) {
+                break; 
+            }
+
+			if(isValidGmail(trim(strInput))) {
+				pEmp->setEmail(trim(strInput));
+				break;
+			} else {
+				setColor(RED);
+				cout<<"Email phải co duoi @gmail.com";
+				setColor(WHITE);
+			}
+		}
+
+		saveToFile();
+        writeDetailFile(pEmp);
+		setColor(GREEN);
+		cout<<"Cap nhat thanh cong"<<endl;
+		setColor(WHITE);
 	}
 
 	void showAll() {
 		if(_listEmployees.isEmpty()) {
+			setColor(YELLOW);
 			cout<<"Danh sach rong"<<endl;
+			setColor(WHITE);
 			return;
 		}
+		setColor(CYAN);
 		cout<<left<<setw(15)<<"USERNAME"<<setw(25)<<"HO TEN"<<setw(15)<<"SDT"<<setw(25)<<"EMAIL"<<setw(20)<<"DIA CHI"<<endl;
 		cout<<string(100, '-')<<endl;
+		setColor(WHITE);
 
 		_listEmployees.forEach([](Employee* e) {
             cout<<*e<<endl;
@@ -455,6 +477,8 @@ public:
 			if(strLine.empty()) {
 				continue;
 			}
+			
+			// Loại bỏ BOM
 			if(strLine.size() >= 3 && (unsigned char)strLine[0] == 0xEF) {
 				strLine = strLine.substr(3);
 			}
@@ -498,11 +522,15 @@ public:
 			return;
 		}
 		string strLine;
+		setColor(CYAN);
 		cout<<"--- THONG TIN CUA BAN (tu file "<<strFilename<<") ---"<<endl;
+		setColor(WHITE);
 		vector<string> vecLabels = {"Ho ten: ", "Dia chi: ", "SDT: ", "Email: "};
 		int iIndex = 0;
 		while(getline(fin, strLine) && iIndex < 4) {
+			setColor(YELLOW);
 			cout<<left<<setw(10)<<vecLabels[iIndex]<<strLine<<endl;
+			setColor(WHITE);
 			iIndex++;
 		}
 		fin.close();
@@ -526,9 +554,11 @@ private:
 		fin>>strFileUser>>strFilePass;
 		fin.close();
 
-		cout<<"*********************"<<endl;
-		cout<<"*  "<<"DANG NHAP ADMIN"<<"  *"<<endl;
-		cout<<"*********************"<<endl;
+		setColor(YELLOW);
+		cout<<"***************************"<<endl;
+		cout<<"*   DANG NHAP ADMIN       *"<<endl;
+		cout<<"***************************"<<endl;
+		setColor(WHITE);
 		cout<<"User: ";
 		getline(cin, strInputUser);
 		cout<<"Pin: ";
@@ -540,6 +570,7 @@ private:
 			setColor(WHITE);
 			return true;
 		}
+
 		setColor(RED);
 		cout<<"Sai thong tin dang nhap"<<endl;
 		setColor(WHITE);
@@ -552,6 +583,7 @@ private:
 		}
 		int iChoice;
 		do {
+			setColor(CYAN);
 			cout<<"*********MENU**********"<<endl;
 			cout<<"    1. Them Employee"<<endl;
 			cout<<"    2. Xoa Employee"<<endl;
@@ -559,27 +591,49 @@ private:
 			cout<<"    4. Cap nhat Employee"<<endl;
 			cout<<"    5. Hien thi thong Emplyee"<<endl;
 			cout<<"    6. Thoat"<<endl;
+			setColor(CYAN);
 			cout<<"***********************"<<endl;
-			iChoice = getInput<int>("Nhap lua chon: ");
+			setColor(WHITE);
+			iChoice = getInput<int>("Nhap lua chon (1-6): ");
 
 			switch(iChoice) {
 				case 1: {
 					string strUser, strName, strAddr, strPhone, strEmail;
+					setColor(YELLOW);
 					cout<<"--- THEM NHAN VIEN ---"<<endl;
+					setColor(WHITE);
 
 					cout<<"Nhap Username: ";
 					getline(cin, strUser);
+					strUser = trim(strUser);
+
+					if(strUser.empty()) {
+						setColor(RED);
+						cout<<"Username khong duoc de trong"<<endl;
+						setColor(WHITE);
+						break;
+					}
+
 					if(_manager.isUsernameExist(trim(strUser))) {
 						setColor(RED);
 						cout<<"Username da ton tai, huy thao tac"<<endl;
 						setColor(WHITE); 
 						break;
 					}
+
 					cout<<"Nhap ho ten: ";
 					getline(cin, strName);
+					strName = trim(strName);
+					if(strName.empty()) {
+						setColor(RED);
+						cout<<"Ho ten khong duoc de trong"<<endl;
+						setColor(WHITE);
+						break;
+					}
 
-					cout<<"Nhap dia chia: ";
+					cout<<"Nhap dia chi: ";
 					getline(cin, strAddr);
+					strAddr = trim(strAddr);
 
 					do{
 						cout<<"Nhap SDT(10 so): ";
@@ -605,7 +659,8 @@ private:
 					} while(!isValidGmail(strEmail));
 
 					_manager.addEmployee(new Employee(trim(strUser), DEFAULT_PASS, standardizeNames(strName), strAddr, strPhone, strEmail));
-					setColor(GREEN); cout << "Them thanh cong! Mat khau mac dinh la " << DEFAULT_PASS << "\n"; setColor(WHITE);
+					setColor(GREEN); 
+					cout << "Them thanh cong! Mat khau mac dinh la " << DEFAULT_PASS << "\n"; setColor(WHITE);
 					break;
 				}
 				case 2: {
@@ -621,7 +676,13 @@ private:
 					getline(cin, strUser);
 					Employee* pEmp = _manager.getEmployeeByUsername(trim(strUser));
 					if(pEmp) {
+						setColor(GREEN);
 						cout<<"Tim thay: "<<*pEmp<<endl;
+						setColor(CYAN);
+						cout<<left<<setw(15)<<"USERNAME"<<setw(25)<<"HO TEN"<<setw(15)<<"SDT"<<setw(25)<<"EMAIL"<<setw(20)<<"DIA CHI"<<endl;
+						cout << string(100, '-') << endl;
+						setColor(WHITE);
+						cout << *pEmp << endl;
 					} else {
 						setColor(RED);
 						cout<<"Khong tim thay"<<endl; 
@@ -630,27 +691,21 @@ private:
 					break;
 				}
 				case 4: {
-					string strUser;
-					cout<< "Nhap username can tim: "; 
-					getline(cin, strUser);
-					Employee* pEmp = _manager.getEmployeeByUsername(trim(strUser));
-					if(pEmp) {
-						cout<<"Tim thay nhan vien: "<<*pEmp<<endl;
-					} else {
-						setColor(RED);
-						cout<<"Khong tim thay";
-						setColor(WHITE); 
-					}
+					_manager.updateEmployeeInfo();
 					break;
 				}
 				case 5:
 					_manager.showAll(); 
                     break;
 				case 6:
+					setColor(YELLOW);
 					cout<<"Dang xuat Admin..."<<endl;
+					setColor(WHITE);
 					break;
 				default:
+				setColor(RED);
 				cout<<"Lua chon khong hop le"<<endl;
+				setColor(WHITE);
 			} 
 		} while(iChoice != 6);
 	}
@@ -659,7 +714,9 @@ private:
 		string strOld, strNew, strConfirm;
 		if(bForced) {
 			setColor(YELLOW);
+			cout<<"\n========================================="<<endl;
 			cout<<"BAN DANG NHAP LAN DAU VUI LONG DOI MAT KHAU"<<endl;
+			cout<<"========================================="<<endl;
 			setColor(WHITE);
 		} else {
 			cout<<"Nhap mat khau cu: ";
@@ -676,9 +733,18 @@ private:
 			cout<<"Nhap mat khau moi: ";
 			strNew = getHiddenPassword();
 			if(strNew.empty()) {
+				setColor(RED);
 				cout<<"Mat khau khong duoc de trong";
+				setColor(WHITE);
 				continue;
 			}
+			if(strNew.length() < 6) {
+				setColor(RED);
+				cout<<"Mat khau phai co it nhat 6 ky tu"<<endl;
+				setColor(WHITE);
+				continue;
+			}
+
 			cout<<"Xac nhan mat khau moi: ";
 			strConfirm = getHiddenPassword();
 
@@ -701,9 +767,10 @@ private:
 		int iAttempts = 0;
 		while(iAttempts < 3) {
 			string strUser, strPass;
-			cout<<"*********************"<<endl;
-			cout<<"* "<<"DANG NHAP EMPLOYEES"<<"  *"<<endl;
-			cout<<"*********************"<<endl;
+			cout<<"\n***************************"<<endl;
+			cout<<"*  DANG NHAP EMPLOYEE     *"<<endl;
+			cout<<"***************************"<<endl;
+			setColor(WHITE);
 			cout<<"User: ";
 			getline(cin, strUser);
 			cout<<"Pass: ";
@@ -712,18 +779,23 @@ private:
 			_pCurrentUser = _manager.login(trim(strUser), strPass);
 
 			if(_pCurrentUser) {
+				setColor(GREEN);
 				cout<<"Xin chao, "<< _pCurrentUser->getName()<<endl;
+				setColor(WHITE);
 				if(_pCurrentUser->getPassword() == DEFAULT_PASS) {
 					changePass(_pCurrentUser, true);
 				}
 
 				int iChoice;
 				do {
+					setColor(CYAN);
 					cout<<"*******MENU EMPLOYEES*******"<<endl;
 					cout<<"     1. Xem thong tin tai khoan"<<endl;
 					cout<<"     2. Doi password"<<endl;
 					cout<<"     3. Thoat"<<endl;
+					setColor(CYAN);
 					cout<<"****************************"<<endl;
+					setColor(WHITE);
 
 					iChoice = getInput<int>("Nhap lua chon: ");
 
@@ -732,19 +804,32 @@ private:
 
 					} else if(iChoice == 2) {
 						changePass(_pCurrentUser, false);
+					} else if(iChoice == 3) {
+						setColor(YELLOW);
+						cout<<"Dang xuat..."<<endl;
+						setColor(WHITE);
+					} else {
+						setColor(RED);
+						cout<<"Lua chon khong hop le"<<endl;
+						setColor(WHITE);
 					}
 				} while(iChoice != 3);
+
 				_pCurrentUser = nullptr;
                 return;
 			} else {
 				setColor(RED);
 				cout<<"Sai Username hoac Password"<<endl;
+				cout<<"Con "<<(2 - iAttempts)<<" lan thu"<<endl;
 				setColor(WHITE);
 				iAttempts++;
 			}
 		}
 		setColor(RED);
-		cout<<"BAN DA NHAP SAI 3 LAN. HE THONG KHOA CHUC NANG DANG NHAP"<<endl;
+		cout<<"\n========================================="<<endl;
+		cout<<"  BAN DA NHAP SAI 3 LAN"<<endl;
+		cout<<"  HE THONG KHOA CHUC NANG DANG NHAP"<<endl;
+		cout<<"========================================="<<endl;
 		setColor(WHITE);
 	}
 
@@ -752,14 +837,17 @@ public:
 	void run() {
 		ensureDirectoryExists();
 		while(true) {
-			setColor(CYAN);
-			cout<<"\n=========================================\n";
-			cout<<"   HE THONG QUAN LY NHAN SU (POPEYES)   \n";
-			cout<<"=========================================\n";
+			setColor(YELLOW);
+			cout<<"\n============================================="<<endl;
+			cout<<"   HE THONG QUAN LY NHAN SU (POPEYES)   "<<endl;
+			cout<<"============================================="<<endl;
 			setColor(WHITE);
 			cout<<"1. Admin (Quan tri vien)"<<endl;
             cout<<"2. Employee (Nhan vien)"<<endl;
             cout<<"3. Thoat chuong trinh"<<endl;
+			setColor(YELLOW);
+			cout<<"============================================="<<endl;
+			setColor(WHITE);
 
 			int iRole = getInput<int>("Nhap vai tro cua ban (1-3): ");
 			
