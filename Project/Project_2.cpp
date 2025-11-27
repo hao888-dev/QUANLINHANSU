@@ -165,13 +165,21 @@ class Node{
 		Node() : _data(T()), _pNext(nullptr) {}
 		Node(T val) : _data(val), _pNext(nullptr) {}
 		
-		void SetData(T Value){ _data = Value; }
+		void SetData(T Value){
+			_data = Value; 
+		}
 
-		void SetNext(Node* pNext){ _pNext = pNext; }
+		void SetNext(Node* pNext){ 
+			_pNext = pNext; 
+		}
 
-		T& GetData() { return _data;}
+		T& GetData() { 
+			return _data;
+		}
 
-		Node* GetNext() { return _pNext; }	
+		Node* GetNext() { 
+			return _pNext; 
+		}	
 };
 
 
