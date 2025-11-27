@@ -153,32 +153,43 @@ T getInput(string strPrompt) {
 	}
 }
 
+// --- Template nhập node ---
+
+
+template<typename T>
+class Node{
+	private:
+		T _data;
+		Node<T>* _pNext;
+	public:
+		Node() : _data(T()), _pNext(nullptr) {}
+		Node(T val) : _data(val), _pNext(nullptr) {}
+		
+		void SetData(T Value){ _data = Value; }
+
+		void SetNext(Node* pNext){ _pNext = pNext; }
+
+		T& GetData() { return _data;}
+
+		Node* GetNext() { return _pNext; }	
+};
+
+
 // --- Class danh sách liên kết đơn ---
 template <class T>
 class LinkedList {
 private:
-	class Node {
-	private:
-		T _data;
-		Node* _pNext;
-	public:
-		Node(T val) : _data(val), _pNext(nullptr) {}
-		friend class LinkedList<T>; 
-	};
-	Node* _pHead;
-    Node* _pTail;
+
+	Node<T>* _pHead;
+    Node<T>* _pTail;
 
 public:
 	LinkedList() : _pHead(nullptr), _pTail(nullptr) {}
 
 	~LinkedList() {
-        clear();
-    }
-
-	void clear() {
-		Node* pCurrent = _pHead;
+		Node<T>* pCurrent = _pHead;
 		while(pCurrent != nullptr) {
-			Node* pNext = pCurrent->_pNext;
+			Node<T>* pNext = pCurrent->GetNext();
 			delete pCurrent;
 			pCurrent = pNext;
 		}
@@ -188,45 +199,45 @@ public:
 
 	// --- Thêm cuối ---
 	void pushBack(T value) {
-        Node* pNewNode = new Node(value);
+        Node<T>* pNewNode = new Node<T>(value);
         if (!_pHead) { 
             _pHead = pNewNode;
             _pTail = pNewNode;
         } else {
-            _pTail->_pNext = pNewNode; 
+            _pTail->SetNext(pNewNode); 
             _pTail = pNewNode;
         }
     }
 
 	// --- Duyệt ---
 	void forEach(function<void(T)> action) {
-		Node* p = _pHead;
+		Node<T>* p = _pHead;
 		while(p) {
-			action(p->_data); 
-            p = p->_pNext;
+			action(p->GetData()); 
+            p = p->GetNext();
 		}
 	}
 
 	// --- Tìm ---
 	T find(function<bool(T)> predicate) {
-		Node* p = _pHead;
+		Node<T>* p = _pHead;
 		while(p) {
-			if (predicate(p->_data)) { 
-                return p->_data;
+			if (predicate(p->GetData())) { 
+                return p->GetData();
             }
-			p = p->_pNext;
+			p = p->GetNext();
 		}
 		return nullptr;
 	}
 
 	// --- Kiểm tra tồn tại ---
 	bool exists(function<bool(T)> predicate) {
-		Node* p = _pHead;
+		Node<T>* p = _pHead;
 		while(p) {
-			if (predicate(p->_data)) { 
+			if (predicate(p->GetData())) { 
                 return true;
             }
-			p = p->_pNext;
+			p = p->GetNext();
 		}
 		return false;
 	}
@@ -238,9 +249,9 @@ public:
 		}
 
 		// --- Xóa đầu ---
-		if(predicate(_pHead->_data)) {
-			Node* pTemp = _pHead;
-			_pHead = _pHead->_pNext;
+		if(predicate(_pHead->GetData())) {
+			Node<T>* pTemp = _pHead;
+			_pHead = _pHead->GetNext();
 
 			if(_pHead == nullptr) {
 				_pTail = nullptr;
@@ -250,11 +261,11 @@ public:
 		}
 
 		// --- Còn lại ---
-		Node* pCur = _pHead;
-		Node* pPrev = nullptr;
+		Node<T>* pCur = _pHead;
+		Node<T>* pPrev = nullptr;
 		while(pCur) {
-			if(predicate(pCur->_data)) {
-				pPrev->_pNext = pCur->_pNext;
+			if(predicate(pCur->GetData())) {
+				pPrev->SetNext(pCur->GetNext());
 
 				if(pCur == _pTail) {
 					_pTail = pPrev;
@@ -263,7 +274,7 @@ public:
 				return true;
 			}
 			pPrev = pCur;
-			pCur = pCur->_pNext;
+			pCur = pCur->GetNext();
 		}
 		return false;
 	}
@@ -274,69 +285,66 @@ public:
 
 	// --- Sắp xếp (đổi chỗ trực tiếp với data) ---
 	void bubbleSort(function<bool(T, T)> compare) {
-		if(!_pHead || !_pHead->_pNext) {
+		if(!_pHead || !_pHead->GetNext()) {
 			return;
 		}
 		bool swapped;
-		Node* ptr1;
-		Node* lptr = nullptr;
+		Node<T>* ptr1;
+		Node<T>* lptr = nullptr;
 
 		do {
 			swapped = false;
 			ptr1 = _pHead;
 
-			while(ptr1->_pNext != lptr) {
-				if(compare(ptr1->_data, ptr1->_pNext->_data)) {
-					swap(ptr1->_data, ptr1->_pNext->_data);
+			while(ptr1->GetNext() != lptr) {
+				if(compare(ptr1->GetData(), ptr1->GetNext()->GetData())) {
+					swap(ptr1->GetData(), ptr1->GetNext()->GetData());
                     swapped = true;
 				}
-				ptr1 = ptr1->_pNext;
+				ptr1 = ptr1->GetNext();
 			}
 			lptr = ptr1;
 		} while(swapped);
 	}
 };
 
-// --- Class Stack (dùng cho Undo) ---
+// --- Class Stack (dùng cho Undo, dùng Node<T> đã có) ---
 template <class T>
 class Stack {
 private:
-	class Node {
-	private:
-		T _data;
-		Node* _pNext;
-	public:
-		Node(T val) : _data(val), _pNext(nullptr) {}
-		friend class Stack<T>;
-	};
-	Node* _pTop;
-
+    Node<T>* _pTop;
 public:
-	Stack() : _pTop(nullptr) {}
-	~Stack() {
-    	while(!isEmpty()) pop();
+    Stack() : _pTop(nullptr) {}
+
+    ~Stack() {
+        while (!isEmpty()) pop();
     }
 
-	void push(T val) {
-		Node* newNode = new Node(val);
-		newNode->_pNext = _pTop;
-		_pTop = newNode;
-	}
+    void push(const T& val) {
+        Node<T>* newNode = new Node<T>(val);
+        newNode->SetNext(_pTop);
+        _pTop = newNode;
+    }
 
-	T pop() {
-		if(isEmpty()) {
-			return T();
-		}
-		Node* temp = _pTop;
-		T val = temp->_data;
-        _pTop = _pTop->_pNext;
+    T pop() {
+        if (isEmpty()) {
+            return T();
+        }
+        Node<T>* temp = _pTop;
+        T val = temp->GetData();
+        _pTop = _pTop->GetNext();
         delete temp;
         return val;
-	}
+    }
 
-	bool isEmpty() {
-		return _pTop == nullptr;
-	}
+    T top() const {
+        if (isEmpty()) return T();
+        return _pTop->GetData();
+    }
+
+    bool isEmpty() const {
+        return _pTop == nullptr;
+    }
 };
 
 class User {
